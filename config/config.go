@@ -35,6 +35,8 @@ type WatchdogConfig struct {
 	// Any request which exceeds this limit will
 	// have an immediate response of 429.
 	MaxInflight int
+
+	CRIUExec bool
 }
 
 // Process returns a string for the process and a slice for the arguments from the FunctionProcess.
@@ -99,6 +101,7 @@ func New(env []string) WatchdogConfig {
 		BufferHTTPBody:   getBools(envMap, "buffer_http", "http_buffer_req_body"),
 		MetricsPort:      8081,
 		MaxInflight:      getInt(envMap, "max_inflight", 0),
+		CRIUExec:         getBool(envMap, "criu_exec"),
 	}
 
 	if val := envMap["mode"]; len(val) > 0 {

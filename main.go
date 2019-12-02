@@ -16,10 +16,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/openfaas-incubator/of-watchdog/config"
-	"github.com/openfaas-incubator/of-watchdog/executor"
-	"github.com/openfaas-incubator/of-watchdog/metrics"
 	limiter "github.com/openfaas/faas-middleware/concurrency-limiter"
+	"github.com/paulofelipefeitosa/of-watchdog/config"
+	"github.com/paulofelipefeitosa/of-watchdog/executor"
+	"github.com/paulofelipefeitosa/of-watchdog/metrics"
 )
 
 var (
@@ -325,6 +325,8 @@ func makeHTTPRequestHandler(watchdogConfig config.WatchdogConfig) func(http.Resp
 		Process:        commandName,
 		ProcessArgs:    arguments,
 		BufferHTTPBody: watchdogConfig.BufferHTTPBody,
+		CRIUExec:       watchdogConfig.CRIUExec,
+		RestoreTime:    -1,
 	}
 
 	if len(watchdogConfig.UpstreamURL) == 0 {
