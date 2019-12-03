@@ -7,13 +7,14 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"math"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
+	"regexp"
+	"strconv"
 	"syscall"
 	"time"
 )
@@ -31,8 +32,9 @@ type HTTPFunctionRunner struct {
 	Client         *http.Client
 	UpstreamURL    *url.URL
 	BufferHTTPBody bool
-	RestoreTime    int
+	RestoreTime    int64
 	CRIUExec       bool
+	RestoreLogPath string
 }
 
 // Start forks the process used for processing incoming requests
@@ -160,7 +162,7 @@ func (f *HTTPFunctionRunner) Run(req FunctionRequest, contentLength int64, r *ht
 	w.Header().Set("X-Duration-Seconds", fmt.Sprintf("%f", time.Since(startedTime).Seconds()))
 	if f.CRIUExec {
 		if f.RestoreTime == -1 {
-			//TODO
+			f.RestoreTime = getRestoreTime(f.RestoreLogPath)
 		}
 		w.Header().Set("X-Restore-Time", fmt.Sprintf("%d", f.RestoreTime))
 	}
@@ -181,52 +183,21 @@ func (f *HTTPFunctionRunner) Run(req FunctionRequest, contentLength int64, r *ht
 	return nil
 }
 
-func getRestoreTime(restoreLogFilepath string) int {
-	lastLine := readLastLine(restoreLogFilepath)
-}
-
-func readLastLine(restoreLogFilepath string) string {
-	f, fLen, err := openFile(restoreLogFilepath)
+func getRestoreTime(restoreLogFilepath string) int64 {
+	lastLine := string(tail(restoreLogFilepath))
+	re := regexp.MustCompile(`\((\d+\.\d+)\) Writing stats`)
+	log.Printf("Last Line: %v", lastLine)
+	result := re.FindAllStringSubmatch(lastLine, -1)[0][1]
+	s, err := strconv.ParseFloat(result, 64)
+	var ret int64
 	if err != nil {
-		return ""
+		log.Printf("Found %s, but cannot convert %s to float64\n", lastLine, result)
+		ret = -1
+	} else {
+		log.Printf("Found %s and converted %s to %f\n", lastLine, result, s)
+		ret = int64(s * 1e9)
 	}
-	bufLen := int64(512)
-	buf := make([]byte, bufLen)
-	var line bytes.Buffer
-	for fPointer, count := fLen, 0; fPointer >= 0 && count < 2; fPointer -= bufLen {
-		offset := fPointer - bufLen
-		readBytes, err := f.ReadAt(buf, int64(math.Min(0, float64(offset))))
-		if offset < 0 { // Do not read the same content twice
-			readBytes = int(fLen % bufLen)
-		}
-		if err != nil {
-			log.Printf("Cannot read %s file seeked at %d, operation received %v", restoreLogFilepath, int64(math.Min(0, float64(offset))), err.Error())
-			break
-		}
-		i := readBytes - 1
-		for ; i >= 0 && count < 2; i-- {
-			if buf[i] == byte(10) || buf[i] == byte(13) { // if is a new line
-				count++
-			}
-		}
-		line.Write(buf[i:readBytes])
-	}
-	return line.String()
-}
-
-func openFile(filepath string) (*os.File, int64, error) {
-	f, err := os.Open(filepath)
-	if err != nil {
-		log.Printf("Cannot open %s file, operation received %v", filepath, err.Error())
-		return nil, 0, err
-	}
-	fStat, err := os.Stat(filepath)
-	if err != nil {
-		log.Printf("Cannot get %s file statistics, operation received %v", filepath, err.Error())
-		return nil, 0, err
-	}
-	fLen := fStat.Size()
-	return f, fLen, nil
+	return ret
 }
 
 func copyHeaders(destination http.Header, source *http.Header) {
