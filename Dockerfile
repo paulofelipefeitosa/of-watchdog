@@ -1,7 +1,7 @@
 FROM golang:1.11
 
-RUN mkdir -p /go/src/github.com/openfaas-incubator/of-watchdog
-WORKDIR /go/src/github.com/openfaas-incubator/of-watchdog
+RUN mkdir -p /go/src/github.com/paulofelipefeitosa/of-watchdog
+WORKDIR /go/src/github.com/paulofelipefeitosa/of-watchdog
 
 COPY vendor              vendor
 COPY config              config

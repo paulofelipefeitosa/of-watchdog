@@ -13,6 +13,8 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"regexp"
+	"strconv"
 	"syscall"
 	"time"
 )
@@ -30,6 +32,9 @@ type HTTPFunctionRunner struct {
 	Client         *http.Client
 	UpstreamURL    *url.URL
 	BufferHTTPBody bool
+	RestoreTime    int64
+	CRIUExec       bool
+	RestoreLogPath string
 }
 
 // Start forks the process used for processing incoming requests
@@ -155,6 +160,12 @@ func (f *HTTPFunctionRunner) Run(req FunctionRequest, contentLength int64, r *ht
 	copyHeaders(w.Header(), &res.Header)
 
 	w.Header().Set("X-Duration-Seconds", fmt.Sprintf("%f", time.Since(startedTime).Seconds()))
+	if f.CRIUExec {
+		if f.RestoreTime == -1 {
+			f.RestoreTime = getRestoreTime(f.RestoreLogPath)
+		}
+		w.Header().Set("X-Restore-Time", fmt.Sprintf("%d", f.RestoreTime))
+	}
 
 	w.WriteHeader(res.StatusCode)
 	if res.Body != nil {
@@ -170,6 +181,23 @@ func (f *HTTPFunctionRunner) Run(req FunctionRequest, contentLength int64, r *ht
 	log.Printf("%s %s - %s - ContentLength: %d", r.Method, r.RequestURI, res.Status, res.ContentLength)
 
 	return nil
+}
+
+func getRestoreTime(restoreLogFilepath string) int64 {
+	lastLine := string(tail(restoreLogFilepath))
+	re := regexp.MustCompile(`\((\d+\.\d+)\) Writing stats`)
+	log.Printf("Last Line: %v", lastLine)
+	result := re.FindAllStringSubmatch(lastLine, -1)[0][1]
+	s, err := strconv.ParseFloat(result, 64)
+	var ret int64
+	if err != nil {
+		log.Printf("Found %s, but cannot convert %s to float64\n", lastLine, result)
+		ret = -1
+	} else {
+		log.Printf("Found %s and converted %s to %f\n", lastLine, result, s)
+		ret = int64(s * 1e9)
+	}
+	return ret
 }
 
 func copyHeaders(destination http.Header, source *http.Header) {
