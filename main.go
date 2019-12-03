@@ -327,6 +327,7 @@ func makeHTTPRequestHandler(watchdogConfig config.WatchdogConfig) func(http.Resp
 		BufferHTTPBody: watchdogConfig.BufferHTTPBody,
 		CRIUExec:       watchdogConfig.CRIUExec,
 		RestoreTime:    -1,
+		RestoreLogPath: watchdogConfig.RestoreLogPath,
 	}
 
 	if len(watchdogConfig.UpstreamURL) == 0 {

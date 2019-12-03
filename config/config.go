@@ -36,7 +36,8 @@ type WatchdogConfig struct {
 	// have an immediate response of 429.
 	MaxInflight int
 
-	CRIUExec bool
+	CRIUExec       bool
+	RestoreLogPath string
 }
 
 // Process returns a string for the process and a slice for the arguments from the FunctionProcess.
@@ -86,6 +87,11 @@ func New(env []string) WatchdogConfig {
 		staticPath = val
 	}
 
+	restoreLogPath := "restore.log"
+	if val, exists := envMap["restore_log_path"]; exists {
+		restoreLogPath = val
+	}
+
 	config := WatchdogConfig{
 		TCPPort:          getInt(envMap, "port", 8080),
 		HTTPReadTimeout:  getDuration(envMap, "read_timeout", time.Second*10),
@@ -102,6 +108,7 @@ func New(env []string) WatchdogConfig {
 		MetricsPort:      8081,
 		MaxInflight:      getInt(envMap, "max_inflight", 0),
 		CRIUExec:         getBool(envMap, "criu_exec"),
+		RestoreLogPath:   restoreLogPath,
 	}
 
 	if val := envMap["mode"]; len(val) > 0 {
