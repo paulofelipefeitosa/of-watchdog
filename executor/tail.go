@@ -35,7 +35,7 @@ func tail(filepath string) []byte {
 		}
 	}
 	s := line.Bytes()
-	reverse(s, 0, len(s) - 1)
+	reverse(s, 0, len(s)-1)
 	return s
 }
 
