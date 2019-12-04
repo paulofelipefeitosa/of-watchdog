@@ -32,7 +32,7 @@ type HTTPFunctionRunner struct {
 	Client         *http.Client
 	UpstreamURL    *url.URL
 	BufferHTTPBody bool
-	RestoreTime    int64
+	StartupTime    int64
 	CRIUExec       bool
 	RestoreLogPath string
 }
@@ -160,12 +160,16 @@ func (f *HTTPFunctionRunner) Run(req FunctionRequest, contentLength int64, r *ht
 	copyHeaders(w.Header(), &res.Header)
 
 	w.Header().Set("X-Duration-Seconds", fmt.Sprintf("%f", time.Since(startedTime).Seconds()))
-	if f.CRIUExec {
-		if f.RestoreTime == -1 {
-			f.RestoreTime = getRestoreTime(f.RestoreLogPath)
+	if f.StartupTime == -1 {
+		if f.CRIUExec {
+			f.StartupTime = getRestoreTime(f.RestoreLogPath)
+		} else {
+			// TODO: get app header;
+			// get container startup timestamp
+			// diff and return
 		}
-		w.Header().Set("X-Restore-Time", fmt.Sprintf("%d", f.RestoreTime))
 	}
+	w.Header().Set("X-App-Startup-Time", fmt.Sprintf("%d", f.StartupTime))
 
 	w.WriteHeader(res.StatusCode)
 	if res.Body != nil {
