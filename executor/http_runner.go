@@ -161,7 +161,7 @@ func (f *HTTPFunctionRunner) Run(req FunctionRequest, contentLength int64, r *ht
 
 	w.Header().Set("X-Duration-Seconds", fmt.Sprintf("%f", time.Since(startedTime).Seconds()))
 	if f.StartupTime == -1 {
-		f.StartupTime = getStartupTime(f.CRIUExec, f.RestoreLogPath, res.Header.Get("X-App-Startup-Time"))
+		f.StartupTime = getStartupTime(f.CRIUExec, f.RestoreLogPath, res.Header.Get("X-App-Startup-Timestamp"))
 	}
 	w.Header().Set("X-App-Startup-Time", fmt.Sprintf("%d", f.StartupTime))
 
