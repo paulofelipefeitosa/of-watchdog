@@ -54,7 +54,7 @@ func TestGetRestoreTime(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error when trying to write data to test file: %v", err.Error())
 	}
-	result := getRestoreTime(TestFilepath)
+	result := getStartupTime(true, TestFilepath, "")
 	expected := int64(533888000)
 	if result != expected {
 		t.Errorf("Tail is incorrect, got: %v, want: %v.", result, expected)

@@ -326,7 +326,7 @@ func makeHTTPRequestHandler(watchdogConfig config.WatchdogConfig) func(http.Resp
 		ProcessArgs:    arguments,
 		BufferHTTPBody: watchdogConfig.BufferHTTPBody,
 		CRIUExec:       watchdogConfig.CRIUExec,
-		RestoreTime:    -1,
+		StartupTime:    -1,
 		RestoreLogPath: watchdogConfig.RestoreLogPath,
 	}
 
